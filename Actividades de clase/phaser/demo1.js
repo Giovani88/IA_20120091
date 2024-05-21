@@ -3,7 +3,7 @@ var h = 400;
 var jugador;
 var fondo;
 
-var bala, bala2, balaD = false, nave;
+var bala, bala2, bala3, balaD = false, nave;
 
 var salto, derecha, izquierda;
 var menu;
@@ -22,7 +22,8 @@ var en_desplazo_derecha = false
 
 var juego = new Phaser.Game(w, h, Phaser.CANVAS, '', { preload: preload, create: create, update: update, render: render });
 
-
+const bala3_x = w - 90
+const bala3_y = h - 400
 
 var bloqueIA = false
 
@@ -45,8 +46,6 @@ function preload() {
     juego.load.image('menu', 'assets/game/menu.png');
 
 }
-
-
 
 function create() {
 
@@ -74,6 +73,12 @@ function create() {
     juego.physics.enable(bala2);
     bala2.body.collideWorldBounds = false;
 
+    bala3 = juego.add.sprite(bala3_x, bala3_y, 'bala');
+    juego.physics.enable(bala3);
+    bala3.body.collideWorldBounds = false;
+
+    
+
     pausaL = juego.add.text(w - 100, 20, 'Pausa', { font: '20px Arial', fill: '#fff' });
     pausaL.inputEnabled = true;
     pausaL.events.onInputUp.add(pausa, self);
@@ -96,6 +101,12 @@ function create() {
 // function enRedNeural(){
 //     nnEntrenamiento.train(datosEntrenamiento, {rate: 0.0003, iterations: 10000, shuffle: true});
 // }
+
+const resetPositionBala3 = () =>{    
+    bala3.position.x = bala3_x
+    bala3.position.y = bala3_y
+}
+
 function enRedNeural() {
     nnEntrenamiento.train(datosEntrenamiento, { rate: 0.0003, iterations: 10000, shuffle: true });
     nnEntrenamientoMov.train(datosEntrenamientoNN2, { rate: 0.0003, iterations: 10000, shuffle: true });
@@ -116,6 +127,31 @@ function datosDeEntrenamiento(param_entrada) {
 }
 
 function datosDeEntrenamientoMov(param_entrada) {
+
+    nnSalidaMov = nnNetworkMov.activate(param_entrada);
+
+    var izquierda = Math.round(nnSalidaMov[0] * 100);
+    // var derecha=Math.round( nnSalidaMov[1]*100 );
+
+    console.log(nnSalidaMov)
+    var derecha = Math.round(nnSalidaMov[1] * 100);
+    //console.log("izquierda,derecha",izquierda,derecha)
+    if (nnSalidaMov[0] <= 0.055 && nnSalidaMov[1] <= 0.055) {
+        console.log('NO HACER NADA')
+        return 0
+    }
+    else if (nnSalidaMov[1] > nnSalidaMov[0]) {
+        console.log('DEBO IR DE')
+        return 2
+    }
+    else {
+        console.log('DEBO IR IZ')
+        return 1
+    }
+    //return nnSalidaMov[1]>nnSalidaMov[0]
+}
+
+function datosDeEntrenamientoMov3(param_entrada) {
 
     nnSalidaMov = nnNetworkMov.activate(param_entrada);
 
@@ -224,9 +260,13 @@ function update() {
 
     fondo.tilePosition.x -= 1;
 
-    juego.physics.arcade.collide(bala, jugador, colisionH, null, this);
-    juego.physics.arcade.collide(bala2, jugador, colisionH, null, this);
+    //juego.physics.arcade.collide(bala, jugador, colisionH, null, this);
+    //juego.physics.arcade.collide(bala2, jugador, colisionH, null, this);
+    juego.physics.arcade.collide(bala3, jugador, colisionH, null, this);
 
+    bala3.body.velocity.y = 250
+    bala3.body.position.x -= 15
+    
     estatuSuelo = 1;
     estatusAire = 0;
 
@@ -236,6 +276,11 @@ function update() {
     if (!jugador.body.onFloor()) {
         estatuSuelo = 0;
         estatusAire = 1;
+    }
+    console.log(bala3.position)
+    if(bala3.position.x<=0){
+        console.log("REPONER BALA 3")
+        resetPositionBala3()
     }
 
     // console.log("jugador",jugador.body.position);
@@ -256,23 +301,28 @@ function update() {
         desp_izquierda()
     }
 
-    if (modoAuto == true && bala2.position.y > 100) {
-        const result = datosDeEntrenamientoMov([despBala2, jugador.position.x, bala2.position.x])
+    // if (modoAuto == true && bala2.position.y > 100) {
+    //     const result = datosDeEntrenamientoMov([despBala2, jugador.position.x, bala2.position.x])
 
-        if (!bloqueIA) {
-            if (result == 2) { //derecha
-                desp_derecha()
-                console.log("ME MOVI derecha");
-                bloqueIA = true;
-            } else if (result == 1) {
-                desp_izquierda()
-                console.log("ME MOVI izquierda");
-                bloqueIA = true;
-            }
-        }
-    }
-    // if( modoAuto==true ){
-    //     desp_izquierda()
+    //     if (!bloqueIA) {
+    //         if (result == 2) { //derecha
+    //             desp_derecha()
+    //             console.log("ME MOVI derecha");
+    //             bloqueIA = true;
+    //         } else if (result == 1) {
+    //             desp_izquierda()
+    //             console.log("ME MOVI izquierda");
+    //             bloqueIA = true;
+    //         }
+    //     }
+    // }
+    // // if( modoAuto==true ){
+    // //     desp_izquierda()
+    // // }
+    // if (modoAuto == true && bala.position.x > 0 && jugador.body.onFloor()) {
+    //     if (datosDeEntrenamiento([despBala, velocidadBala])) {
+    //         saltar();
+    //     }
     // }
     en_desplazo = false
 
@@ -282,11 +332,6 @@ function update() {
         bloqueIA = false
     }
 
-    if (modoAuto == true && bala.position.x > 0 && jugador.body.onFloor()) {
-        if (datosDeEntrenamiento([despBala, velocidadBala])) {
-            saltar();
-        }
-    }
 
     if (balaD == false) {
         disparo();
