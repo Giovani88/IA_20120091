@@ -3,7 +3,8 @@ var h = 400;
 var jugador;
 var fondo;
 
-var bala, bala2, bala3, balaD = false, nave;
+var bala, bala2, bala3, balaD = false;
+var nave,nave2,nave3;
 
 var salto, derecha, izquierda;
 var menu;
@@ -46,11 +47,12 @@ const resetBala2 = () => {
 }
 
 function preload() {
-    juego.load.image('fondo', 'assets/game/fondo.jpg');
-    juego.load.spritesheet('mono', 'assets/sprites/altair.png', 32, 48);
-    juego.load.image('nave', 'assets/game/ufo.png');
+    juego.load.image('fondo', 'assets/game/db_escenario2.png');
+    juego.load.spritesheet('mono', 'assets/sprites/kokun.png', 34, 48);
+    juego.load.image('nave', 'assets/game/nave.png');
     juego.load.image('bala', 'assets/sprites/purple_ball.png');
     juego.load.image('menu', 'assets/game/menu.png');
+    juego.load.image('goku_tieso', 'assets/game/koku_tieso.png',38,50);
 
 }
 
@@ -61,7 +63,11 @@ function create() {
     juego.time.desiredFps = 30;
 
     fondo = juego.add.tileSprite(0, 0, w, h, 'fondo');
-    nave = juego.add.sprite(w - 100, h - 70, 'nave');
+
+    nave = juego.add.sprite(w - 110, h - 55, 'nave');
+    nave2 = juego.add.sprite(w - 800, h - 400, 'nave');
+    nave3 = juego.add.sprite(w-200, h - 400, 'nave');
+    
 
 
     jugador = juego.add.sprite(50, h, 'mono');
@@ -69,8 +75,8 @@ function create() {
 
     juego.physics.enable(jugador);
     jugador.body.collideWorldBounds = true;
-    var corre = jugador.animations.add('corre', [8, 9, 10, 11]);
-    jugador.animations.play('corre', 10, true);
+    var corre = jugador.animations.add('corre', [0, 1]);
+    jugador.animations.play('corre', 6 , true);
 
     bala = juego.add.sprite(w - 100, h, 'bala');
     juego.physics.enable(bala);
@@ -111,6 +117,24 @@ function create() {
 // function enRedNeural(){
 //     nnEntrenamiento.train(datosEntrenamiento, {rate: 0.0003, iterations: 10000, shuffle: true});
 // }
+const playerChangeSkin = (skin)=>{    
+    if(skin == 'game over'){
+        jugador.loadTexture('goku_tieso');
+        return
+    }
+    jugador.loadTexture('mono');
+    jugador.animations.add('corre', [0, 1]);
+    jugador.animations.play('corre', 6 , true);
+    
+
+
+
+    // juego.physics.enable(jugador);
+    // jugador.body.collideWorldBounds = true;
+    // var corre = jugador.animations.add('corre', [0, 1]);
+    // jugador.animations.play('corre', 6 , true);
+
+}
 
 const resetPositionBala3 = () => {
     bala3.position.x = bala3_x
@@ -195,7 +219,7 @@ function mPausa(event) {
             menu.destroy();
             resetVariables();
             resetBala2()
-
+            playerChangeSkin("initial")
 
             juego.paused = false;
 
@@ -389,7 +413,7 @@ function disparo() {
 
 function colisionH() {
     ////console.log('colission')
-
+    playerChangeSkin("game over")
     pausa();
     //resetBala2()
 }
