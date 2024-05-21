@@ -212,6 +212,7 @@ function mPausa(event) {
                     //////console.log("","Entrenamiento "+ datosEntrenamiento.length +" valores" );
                     enRedNeural();
                     eCompleto = true;
+                    jugador.position.x = 50
                 }
                 modoAuto = true;
             }
@@ -277,7 +278,7 @@ function update() {
     bala3.body.velocity.y = 250
     bala3.body.position.x -= 15
 
-    
+    console.log(jugador.position)
 
     estatuSuelo = 1;
     estatusAire = 0;
@@ -413,8 +414,9 @@ function disparo() {
 
 function colisionH() {
     ////console.log('colission')
-    playerChangeSkin("game over")
+    playerChangeSkin("game over")    
     pausa();
+    jugador.position.x = 50
     //resetBala2()
 }
 
