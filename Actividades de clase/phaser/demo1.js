@@ -42,7 +42,6 @@ const resetBala2 = () => {
     bala2.body.velocity.y = -400;
     bala2.body.velocity.x = 0;
     bala2.position.x = w - 750;
-    bala2.position.x = jugador.body.position.x;
     bala2.position.y = h - 800;
 }
 
@@ -245,9 +244,10 @@ const desp_izquierda = () => {
 
 function update() {
     fondo.tilePosition.x -= 1;
-    juego.physics.arcade.collide(bala, jugador, colisionH, null, this);
-    juego.physics.arcade.collide(bala2, jugador, colisionH, null, this);
-    juego.physics.arcade.collide(bala3, jugador, colisionH, null, this);
+    
+    //juego.physics.arcade.collide(bala, jugador, colisionH, null, this);
+    //juego.physics.arcade.collide(bala2, jugador, colisionH, null, this);
+    //juego.physics.arcade.collide(bala3, jugador, colisionH, null, this);
 
     bala3.body.velocity.y = 50
     bala3.body.position.x -= 5
@@ -320,7 +320,7 @@ function update() {
     }
     en_desplazo = false
 
-    bala2.body.velocity.y = 50
+    bala2.body.velocity.y = 80
 
     if (bala2.body.position.y <= 0) {
         bloqueIA = false
