@@ -4,7 +4,7 @@ var jugador;
 var fondo;
 
 var bala, bala2, bala3, balaD = false;
-var nave,nave2,nave3;
+var nave, nave2, nave3;
 
 var salto, derecha, izquierda;
 var menu;
@@ -47,12 +47,12 @@ const resetBala2 = () => {
 }
 
 function preload() {
-    juego.load.image('fondo', 'assets/game/db_escenario2.png');
+    juego.load.image('fondo', 'assets/game/db_escenario2-min.png');
     juego.load.spritesheet('mono', 'assets/sprites/kokun.png', 34, 48);
     juego.load.image('nave', 'assets/game/nave.png');
     juego.load.image('bala', 'assets/sprites/purple_ball.png');
     juego.load.image('menu', 'assets/game/menu.png');
-    juego.load.image('goku_tieso', 'assets/game/koku_tieso.png',38,50);
+    juego.load.image('goku_tieso', 'assets/game/koku_tieso.png', 38, 50);
 
 }
 
@@ -66,17 +66,14 @@ function create() {
 
     nave = juego.add.sprite(w - 110, h - 55, 'nave');
     nave2 = juego.add.sprite(w - 800, h - 400, 'nave');
-    nave3 = juego.add.sprite(w-200, h - 400, 'nave');
-    
-
+    nave3 = juego.add.sprite(w - 200, h - 400, 'nave');
 
     jugador = juego.add.sprite(50, h, 'mono');
-
 
     juego.physics.enable(jugador);
     jugador.body.collideWorldBounds = true;
     var corre = jugador.animations.add('corre', [0, 1]);
-    jugador.animations.play('corre', 6 , true);
+    jugador.animations.play('corre', 6, true);
 
     bala = juego.add.sprite(w - 100, h, 'bala');
     juego.physics.enable(bala);
@@ -89,7 +86,6 @@ function create() {
     bala3 = juego.add.sprite(bala3_x, bala3_y, 'bala');
     juego.physics.enable(bala3);
     bala3.body.collideWorldBounds = false;
-
 
 
     pausaL = juego.add.text(w - 100, 20, 'Pausa', { font: '20px Arial', fill: '#fff' });
@@ -114,26 +110,15 @@ function create() {
 
 }
 
-// function enRedNeural(){
-//     nnEntrenamiento.train(datosEntrenamiento, {rate: 0.0003, iterations: 10000, shuffle: true});
-// }
-const playerChangeSkin = (skin)=>{    
-    if(skin == 'game over'){
+
+const playerChangeSkin = (skin) => {
+    if (skin == 'game over') {
         jugador.loadTexture('goku_tieso');
         return
     }
     jugador.loadTexture('mono');
     jugador.animations.add('corre', [0, 1]);
-    jugador.animations.play('corre', 6 , true);
-    
-
-
-
-    // juego.physics.enable(jugador);
-    // jugador.body.collideWorldBounds = true;
-    // var corre = jugador.animations.add('corre', [0, 1]);
-    // jugador.animations.play('corre', 6 , true);
-
+    jugador.animations.play('corre', 6, true);
 }
 
 const resetPositionBala3 = () => {
@@ -147,9 +132,9 @@ function enRedNeural() {
     nnEntrenamientoMov3.train(datosEntrenamientoNN3, { rate: 0.0003, iterations: 10000, shuffle: true });
 }
 
-function datosDeEntrenamiento(param_entrada) {    
-    nnSalida = nnNetwork.activate(param_entrada);    
-    var aire = Math.round(nnSalida[0] * 100);    
+function datosDeEntrenamiento(param_entrada) {
+    nnSalida = nnNetwork.activate(param_entrada);
+    var aire = Math.round(nnSalida[0] * 100);
     return aire >= 40;
 }
 
@@ -158,31 +143,30 @@ function datosDeEntrenamientoMov(param_entrada) {
     nnSalidaMov = nnNetworkMov.activate(param_entrada);
 
     var izquierda = Math.round(nnSalidaMov[0] * 100);
-    // var derecha=Math.round( nnSalidaMov[1]*100 );
 
     console.log(nnSalidaMov)
     var derecha = Math.round(nnSalidaMov[1] * 100);
-    ////console.log("izquierda,derecha",izquierda,derecha)
+
     if (nnSalidaMov[0] <= 0.055 && nnSalidaMov[1] <= 0.055) {
-        //console.log('NO HACER NADA')
+
         return 0
     }
     else if (nnSalidaMov[1] > nnSalidaMov[0]) {
-        //console.log('DEBO IR DE')
+
         return 2
     }
     else {
-        //console.log('DEBO IR IZ')
+
         return 1
     }
-    //return nnSalidaMov[1]>nnSalidaMov[0]
+
 }
 
 function datosDeEntrenamientoMov3(param_entrada) {
 
     nnSalidaMov3 = nnNetworkMov3.activate(param_entrada);
-    const result = Math.round(nnSalidaMov3[0] * 100);    
-    console.log(nnSalidaMov3, result)    
+    const result = Math.round(nnSalidaMov3[0] * 100);
+    console.log(nnSalidaMov3, result)
     return result > 80
 }
 
@@ -209,7 +193,7 @@ function mPausa(event) {
                 modoAuto = false;
             } else if (mouse_x >= menu_x1 && mouse_x <= menu_x2 && mouse_y >= menu_y1 + 90 && mouse_y <= menu_y2) {
                 if (!eCompleto) {
-                    //////console.log("","Entrenamiento "+ datosEntrenamiento.length +" valores" );
+
                     enRedNeural();
                     eCompleto = true;
                     jugador.position.x = 50
@@ -234,11 +218,7 @@ function resetVariables() {
     jugador.body.velocity.y = 0;
     bala.body.velocity.x = 0;
     bala.position.x = w - 100;
-    //bala2.position.x= w-750;
-    //bala2.position.y= h-800;
-    //jugador.position.x=50;
     balaD = false;
-
 }
 
 
@@ -253,24 +233,18 @@ const desp_derecha = () => {
     jugador.body.position.x = 50;
     estatusDerecha = 1;
     estatusIzquierda = 0;
-
-
 }
 const desp_izquierda = () => {
-
     jugador.body.position.x = 0;
     estatusDerecha = 0;
     estatusIzquierda = 1;
     en_desplazo = true
-
 }
 
 
 
 function update() {
-
     fondo.tilePosition.x -= 1;
-
     juego.physics.arcade.collide(bala, jugador, colisionH, null, this);
     juego.physics.arcade.collide(bala2, jugador, colisionH, null, this);
     juego.physics.arcade.collide(bala3, jugador, colisionH, null, this);
@@ -289,24 +263,22 @@ function update() {
     if (!jugador.body.onFloor()) {
         estatuSuelo = 0;
         estatusAire = 1;
-        statusAireMov3=1;
-    }else{
-        statusAireMov3=0;
+        statusAireMov3 = 1;
+    } else {
+        statusAireMov3 = 0;
     }
-    //console.log(bala3.position)
+
     if (bala3.position.x <= 0) {
-        //console.log("REPONER BALA 3")
+
         resetPositionBala3()
     }
 
-    // //console.log("jugador",jugador.body.position);
-    // //console.log("bala2",bala2.body.position);
     despBala = Math.floor(jugador.position.x - bala.position.x);
 
     despBala2 = Math.floor(jugador.position.y - bala2.position.y);
 
     despBala3 = Math.floor(jugador.position.x - bala3.position.x);
-    ////console.log(bala2.position.y)
+
 
     if (modoAuto == false && salto.isDown && jugador.body.onFloor()) {
         saltar();
@@ -323,7 +295,7 @@ function update() {
         const result = datosDeEntrenamientoMov([despBala2, jugador.position.x, bala2.position.x])
 
         if (!bloqueIA) {
-            if (result == 2) { //derecha
+            if (result == 2) {
                 desp_derecha()
                 console.log("ME MOVI derecha");
                 bloqueIA = true;
@@ -334,30 +306,25 @@ function update() {
             }
         }
     }
-    // if( modoAuto==true ){
-    //     desp_izquierda()
-    // }
+
     if (modoAuto == true && bala.position.x > 0 && jugador.body.onFloor()) {
         if (datosDeEntrenamiento([despBala, velocidadBala])) {
             saltar();
         }
     }
     if (modoAuto == true && bala3.position.x > 0 && jugador.body.onFloor()) {
-        if (datosDeEntrenamientoMov3([despBala3, bala3.position.x,bala3.position.y])) {
+        if (datosDeEntrenamientoMov3([despBala3, bala3.position.x, bala3.position.y])) {
             saltar();
             console.log("SALTA")
         }
     }
-
-   
     en_desplazo = false
 
     bala2.body.velocity.y = 200
+
     if (bala2.body.position.y <= 0) {
-        ////console.log("bola en el cielo")
         bloqueIA = false
     }
-
 
     if (balaD == false) {
         disparo();
@@ -368,11 +335,6 @@ function update() {
     }
     if (bala2.position.y >= 380) {
         resetBala2()
-        // setTimeout(()=>{
-        //     bala2.position.x= w-750;
-        //     bala2.position.y= h-400;
-
-        // },0)
     }
 
 
@@ -382,8 +344,8 @@ function update() {
             'input': [despBala2, jugador.position.x, bala2.position.x],
             'output': [estatusIzquierda, estatusDerecha]
         });
-        //console.log('input', despBala2, jugador.position.x, bala2.position.x)
-        //console.log('output ', estatusIzquierda, estatusDerecha);
+
+
     }
 
     if (modoAuto == false && bala.position.x > 0) {
@@ -393,15 +355,15 @@ function update() {
             'output': [estatusAire]
         });
 
-        // ////console.log("Desplazamiento Bala, Velocidad Bala, Estatus, Estatus: ",
-        //     despBala + " " +velocidadBala + " "+ estatusAire+" "+  estatuSuelo);
+
+
     }
-    if(modoAuto == false && bala3.position.x > 0){
+    if (modoAuto == false && bala3.position.x > 0) {
         datosEntrenamientoNN3.push({
-            'input': [despBala3, bala3.position.x,bala3.position.y],
+            'input': [despBala3, bala3.position.x, bala3.position.y],
             'output': [statusAireMov3]
         });
-        console.log('input',despBala3, bala3.position.x,bala3.position.y,'output',statusAireMov3)
+        console.log('input', despBala3, bala3.position.x, bala3.position.y, 'output', statusAireMov3)
     }
 }
 
@@ -413,11 +375,11 @@ function disparo() {
 }
 
 function colisionH() {
-    ////console.log('colission')
-    playerChangeSkin("game over")    
+
+    playerChangeSkin("game over")
     pausa();
     jugador.position.x = 50
-    //resetBala2()
+
 }
 
 function velocidadRandom(min, max) {
