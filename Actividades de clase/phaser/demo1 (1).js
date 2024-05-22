@@ -181,7 +181,7 @@ function update() {
 
     background.tilePosition.x -= 1;
 
-    game.physics.arcade.collide(bullet, player, collisionHandler, null, this);
+    //game.physics.arcade.collide(bullet, player, collisionHandler, null, this);
     game.physics.arcade.collide(bullet2, player, collisionHandler, null, this);
 
     groundStatus = 1;
