@@ -30,7 +30,7 @@ var en_desplazo_derecha = false
 
 var juego = new Phaser.Game(w, h, Phaser.CANVAS, '', { preload: preload, create: create, update: update, render: render });
 
-const bala3_x = w - 90
+const bala3_x = w + 20
 const bala3_y = h - 400
 
 var bloqueIA = false
@@ -249,8 +249,8 @@ function update() {
     juego.physics.arcade.collide(bala2, jugador, colisionH, null, this);
     juego.physics.arcade.collide(bala3, jugador, colisionH, null, this);
 
-    bala3.body.velocity.y = 250
-    bala3.body.position.x -= 15
+    bala3.body.velocity.y = 50
+    bala3.body.position.x -= 5
 
     console.log(jugador.position)
 
@@ -268,7 +268,7 @@ function update() {
         statusAireMov3 = 0;
     }
 
-    if (bala3.position.x <= 0) {
+    if (bala3.position.x <= 0 ) {
 
         resetPositionBala3()
     }
@@ -320,7 +320,7 @@ function update() {
     }
     en_desplazo = false
 
-    bala2.body.velocity.y = 200
+    bala2.body.velocity.y = 50
 
     if (bala2.body.position.y <= 0) {
         bloqueIA = false
