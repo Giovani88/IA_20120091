@@ -30,8 +30,12 @@ var en_desplazo_derecha = false
 
 var juego = new Phaser.Game(w, h, Phaser.CANVAS, '', { preload: preload, create: create, update: update, render: render });
 
-const bala3_x = w + 20
+const bala3_x = w - 180
 const bala3_y = h - 400
+
+//const bala2_velocidad = 85
+//const bala2_velocidad = 75
+const bala2_velocidad = 85
 
 var bloqueIA = false
 
@@ -41,10 +45,11 @@ var estatusIzquierda = 0;
 var temp = 0;
 
 const resetBala2 = () => {
-    bala2.body.velocity.y = -400;
-    bala2.body.velocity.x = 0;
+    //bala2.body.velocity.y = -400;
+    //bala2.body.velocity.x = 0;
     bala2.position.x = w - 750;
-    bala2.position.y = h - 800;
+    bala2.body.position.y = 5;
+    bala2.body.velocity.y = bala2_velocidad
 }
 
 function preload() {
@@ -58,6 +63,17 @@ function preload() {
 }
 
 function create() {
+
+    // Configurar el texto del score
+    scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#FFF' });
+
+    // Configurar el temporizador para incrementar el score cada segundo
+    timerEvent = this.time.addEvent({
+        delay: 1000,                // Intervalo en milisegundos (1000 ms = 1 segundo)
+        callback: incrementScore,   // Función a llamar cada intervalo
+        callbackScope: this,        // Alcance de la función
+        loop: true                  // Repetir indefinidamente
+    });
 
     juego.physics.startSystem(Phaser.Physics.ARCADE);
     juego.physics.arcade.gravity.y = 800;
@@ -106,7 +122,7 @@ function create() {
     nnNetworkMov = new synaptic.Architect.Perceptron(3, 6, 6, 1);
     nnEntrenamientoMov = new synaptic.Trainer(nnNetworkMov);
 
-    nnNetworkMov3 = new synaptic.Architect.Perceptron(3, 6, 6, 1);
+    nnNetworkMov3 = new synaptic.Architect.Perceptron(2, 6, 6, 1);
     nnEntrenamientoMov3 = new synaptic.Trainer(nnNetworkMov3);
 
 }
@@ -128,8 +144,8 @@ const resetPositionBala3 = () => {
 }
 
 function enRedNeural() {
-    //nnEntrenamiento.train(datosEntrenamiento, { rate: 0.0003, iterations: 10000, shuffle: true });
-    //nnEntrenamientoMov.train(datosEntrenamientoNN2, { rate: 0.0003, iterations: 10000, shuffle: true });
+    nnEntrenamiento.train(datosEntrenamiento, { rate: 0.0003, iterations: 10000, shuffle: true });
+    nnEntrenamientoMov.train(datosEntrenamientoNN2, { rate: 0.0003, iterations: 10000, shuffle: true });
     nnEntrenamientoMov3.train(datosEntrenamientoNN3, { rate: 0.0003, iterations: 10000, shuffle: true });
 }
 
@@ -143,8 +159,8 @@ function datosDeEntrenamientoMov(param_entrada) {
 
     nnSalidaMov = nnNetworkMov.activate(param_entrada);    
     const result = Math.round(nnSalidaMov[0] * 100);
-    //console.log("RED 2 ",nnSalidaMov, result)
-    return result > 25
+    console.log("RED 2 ",nnSalidaMov, result)
+    return result > 20
 
     // var izquierda = Math.round(nnSalidaMov[0] * 100);
 
@@ -172,7 +188,8 @@ function datosDeEntrenamientoMov3(param_entrada) {
     const result = Math.round(nnSalidaMov3[0] * 100);
     console.log("RED 3 ",nnSalidaMov3, result)
     
-    return result >= 30
+    return result >= 9
+    //return false
 }
 
 
@@ -202,13 +219,14 @@ function mPausa(event) {
                     enRedNeural();
                     eCompleto = true;
                     jugador.position.x = 50
+                    //resetPositionBala3()
                 }
                 modoAuto = true;
             }
 
             menu.destroy();
             resetVariables();
-            resetBala2()
+            //resetBala2()
             playerChangeSkin("initial")
 
             juego.paused = false;
@@ -251,15 +269,17 @@ const desp_izquierda = () => {
 function update() {
     //console.log(jugador.position.x)
     fondo.tilePosition.x -= 1;
+    //console.log(bala2.body.velocity)
+    //console.log(bala2.body.position)
     
-    //juego.physics.arcade.collide(bala, jugador, colisionH, null, this);
-    //juego.physics.arcade.collide(bala2, jugador, colisionH, null, this);
+    juego.physics.arcade.collide(bala, jugador, colisionH, null, this);
+    juego.physics.arcade.collide(bala2, jugador, colisionH, null, this);
     juego.physics.arcade.collide(bala3, jugador, colisionH, null, this);
 
-    bala3.body.velocity.y = 50
+    bala3.body.velocity.y = 80
     bala3.body.position.x -= 5
 
-    ////console.log(jugador.position)
+    console.log(bala.position)
 
     estatuSuelo = 1;
     estatusAire = 0;
@@ -285,6 +305,7 @@ function update() {
     despBala2 = Math.floor(jugador.position.y - bala2.position.y);
 
     despBala3 = Math.floor(jugador.position.x - bala3.position.x);
+    despBala3b = Math.floor(jugador.position.y - bala3.position.y);
 
 
     if (modoAuto == false && salto.isDown && jugador.body.onFloor()) {
@@ -301,35 +322,34 @@ function update() {
     //console.log(bala2.body.position.y,jugador.body.position.y)
     if(desplazo ){
         //desp_derecha()
-        if(!balaD && bala2.body.position.y < 300 && bala3.body.position.y < 300 ){
+        //!balaD
+        if(bala.body.position.x > 580 && bala2.body.position.y < 300 && bala3.body.position.y < 300 ){
             desp_derecha();
         }                    
     }
 
-    // if (modoAuto == true && bala2.position.y > 100) {
-    //     const result = datosDeEntrenamientoMov([despBala2, jugador.position.x, bala2.position.x])
-    //     if (result) {
-    //         //saltar();
-    //         //desp_izquierda()
-    //         ////console.log("SALTA")
-    //     }
-    // }
+    if (modoAuto == true && bala2.position.y > 200) {
+        const result = datosDeEntrenamientoMov([despBala2, jugador.position.x, bala2.position.x])
+        if (result) {            
+            desp_izquierda()            
+        }
+    }
 
-    if (modoAuto == true && bala3.position.y > 100 && bala3.position.x > 0 && jugador.body.onFloor()) {
-        if (datosDeEntrenamientoMov3([despBala3, bala3.position.x, bala3.position.y])) {
+    if (modoAuto == true && bala3.position.y > 300 && bala3.position.x > 0) {
+        if (datosDeEntrenamientoMov3([despBala3, despBala3b])) {
             //saltar();
             desp_izquierda()
             console.log("RED 3 Izquieda")
         }
     }
-    // if (modoAuto == true && bala.position.x > 0 && jugador.body.onFloor()) {
-    //     if (datosDeEntrenamiento([despBala, velocidadBala])) {
-    //         saltar();
-    //     }
-    // }
+    if (modoAuto == true && bala.position.x > 0 && jugador.body.onFloor()) {
+        if (datosDeEntrenamiento([despBala, velocidadBala])) {
+            saltar();
+        }
+    }
     
 
-    bala2.body.velocity.y = 80
+    bala2.body.velocity.y = bala2_velocidad
 
     if (bala2.body.position.y <= 0) {
         bloqueIA = false
@@ -359,10 +379,10 @@ function update() {
     if (modoAuto == false && bala3.position.y > 200 && bala3.position.x > 0) {
         
         datosEntrenamientoNN3.push({
-            'input': [despBala3, bala3.position.x, bala3.position.y],
-            'output': [ estatusIzquierda * 3 ]
+            'input': [despBala3, despBala3b],
+            'output': [ estatusIzquierda]
         });
-        console.log('input', despBala3, bala3.position.x, bala3.position.y, 'output', estatusIzquierda * 3)        
+        //console.log('input', despBala3, despBala3b, 'output', estatusIzquierda)        
     }
     if (modoAuto == false && bala.position.x > 0) {
 
@@ -385,6 +405,8 @@ function colisionH() {
 
     playerChangeSkin("game over")
     pausa();
+    resetPositionBala3()
+    resetBala2()
     jugador.position.x = 50
 
 }
