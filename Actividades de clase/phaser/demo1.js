@@ -64,17 +64,6 @@ function preload() {
 
 function create() {
 
-    // Configurar el texto del score
-    scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px', fill: '#FFF' });
-
-    // Configurar el temporizador para incrementar el score cada segundo
-    timerEvent = this.time.addEvent({
-        delay: 1000,                // Intervalo en milisegundos (1000 ms = 1 segundo)
-        callback: incrementScore,   // Función a llamar cada intervalo
-        callbackScope: this,        // Alcance de la función
-        loop: true                  // Repetir indefinidamente
-    });
-
     juego.physics.startSystem(Phaser.Physics.ARCADE);
     juego.physics.arcade.gravity.y = 800;
     juego.time.desiredFps = 30;
