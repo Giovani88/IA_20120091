@@ -384,7 +384,8 @@ function update() {
 }
 
 function disparo() {
-    velocidadBala = -1 * velocidadRandom(300, 500);
+    const max = modoAuto ? 700 : 500
+    velocidadBala = -1 * velocidadRandom(300, max);
     bala.body.velocity.y = 0;
     bala.body.velocity.x = velocidadBala;
     balaD = true;
