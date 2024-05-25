@@ -65,7 +65,7 @@ function preload() {
 function create() {
 
     juego.physics.startSystem(Phaser.Physics.ARCADE);
-    juego.physics.arcade.gravity.y = 800;
+    //juego.physics.arcade.gravity.y = 800;
     juego.time.desiredFps = 30;
 
     fondo = juego.add.tileSprite(0, 0, w, h, 'fondo');
@@ -87,7 +87,9 @@ function create() {
 
     bala2 = juego.add.sprite(w - 750, h - 400, 'bala');
     juego.physics.enable(bala2);
-    bala2.body.collideWorldBounds = false;
+    bala2.body.collideWorldBounds = true;
+    bala2.body.bounce.set(1)
+    bala2.body.velocity.set(150, 200)
 
     bala3 = juego.add.sprite(bala3_x, bala3_y, 'bala');
     juego.physics.enable(bala3);
@@ -261,9 +263,9 @@ function update() {
     //console.log(bala2.body.velocity)
     //console.log(bala2.body.position)
     
-    juego.physics.arcade.collide(bala, jugador, colisionH, null, this);
-    juego.physics.arcade.collide(bala2, jugador, colisionH, null, this);
-    juego.physics.arcade.collide(bala3, jugador, colisionH, null, this);
+    //juego.physics.arcade.collide(bala, jugador, colisionH, null, this);
+    //juego.physics.arcade.collide(bala2, jugador, colisionH, null, this);
+    //juego.physics.arcade.collide(bala3, jugador, colisionH, null, this);
 
     bala3.body.velocity.y = 80
     bala3.body.position.x -= 5
@@ -338,11 +340,11 @@ function update() {
     }
     
 
-    bala2.body.velocity.y = bala2_velocidad
+    //bala2.body.velocity.y = bala2_velocidad
 
-    if (bala2.body.position.y <= 0) {
-        bloqueIA = false
-    }
+    // if (bala2.body.position.y <= 0) {
+    //     bloqueIA = false
+    // }
 
     if (balaD == false) {
         disparo();
@@ -351,9 +353,9 @@ function update() {
     if (bala.position.x <= 0) {
         resetVariables();
     }
-    if (bala2.position.y >= 380) {
-        resetBala2()
-    }
+    // if (bala2.position.y >= 380) {
+    //     resetBala2()
+    // }
 
 
     if (modoAuto == false && bala2.position.y > 100 && despBala2 > 0) {
