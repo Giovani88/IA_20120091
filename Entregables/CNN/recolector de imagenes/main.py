@@ -1,16 +1,34 @@
 import numpy as np
 import cv2 as cv
 import math 
+import os
  
-cap = cv.VideoCapture("/home/likcos/Vídeos/rosas.mp4")
+directorio = "robocasa"
+cap = cv.VideoCapture("../assets/videos/robo casa/robocasa f.mp4")
 i=0
+#contador = 0
+contador=len(os.listdir(directorio))
+#print(i)
+frame_interval = 1  # Capturar una imagen cada 30 frames (ajusta este valor según necesites)
+
 while True:
     ret, frame = cap.read()
-    cv.imshow('img', frame)
-    k = cv.waitKey(1)
-    #if k == ord('a'):
+    if not ret:
+        break
+    #cv.imshow('img', frame)
+    if i % frame_interval == 0:
+        resized_frame = cv.resize(frame, (28, 21))
+        cv.imshow('img', resized_frame)
+        cv.imwrite(f'{directorio}/data{contador}.jpg', resized_frame)
+        contador+=1
+        
     i=i+1    
-    cv.imwrite('/home/likcos/datasetcubre/data'+str(i)+'.jpg', frame )
+    #frame = cv.resize(frame, (28, 21))
+    #cv.imshow('img', frame)
+    #if k == ord('a'):
+    
+    #cv.imwrite('tornados/data'+str(i)+'.jpg', frame )
+    k = cv.waitKey(1)
     if k == 27:
         break
 cap.release()
