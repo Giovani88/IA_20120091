@@ -1,7 +1,20 @@
 Entregables/emociones/generador/emociones/**
 *.xml
 
-
+*.xml
+Entregables/CNN/assets/videos/tornados/**
+Entregables/CNN/assets/videos/incendios/**
+Entregables/CNN/assets/videos/**
+Entregables/CNN/dataset/**
+Entregables/CNN/resul/**
+Entregables/CNN/recolector de imagenes/tornados/**
+Entregables/CNN/recolector de imagenes/incendios/**
+Entregables/CNN/recolector de imagenes/inundacion/**
+Entregables/CNN/recolector de imagenes/asalto/**
+Entregables/CNN/recolector de imagenes/robocasa/**
+Entregables/CNN/dataset2/**
+Entregables/CNN/dataset3/**
+*.h5
 
 Entregables/waldo/generador/waldo
 
