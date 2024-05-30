@@ -1,16 +1,19 @@
-var w = 800;
-var h = 600;
+var w = 600;
+var h = 500;
 
 var jugador;
 var fondo;
 
 var bola;
 var menu;
-
+var yAnterior;
+var yActual;
 
 const bola_x =0 
 const bola_y =0
 var nnNetwork, nnEntrenamiento, nnSalida, datosEntrenamiento = [];
+
+
 
 var modoAuto = false, eCompleto = false;
 
@@ -24,7 +27,7 @@ var salida_abajo = 0
 
 
 function preload() {
-    juego.load.image('bola',"assets/sprites/wizball.png")    
+    juego.load.image('bola',"assets/sprites/purple_ball.png")    
     juego.load.image('jugador', 'assets/sprites/goku.png');
     juego.load.image('menu', 'assets/game/menu.png');
 
@@ -62,7 +65,7 @@ function create() {
     abajo = juego.input.keyboard.addKey(Phaser.Keyboard.S);
 
 
-    nnNetwork = new synaptic.Architect.Perceptron(4, 6, 6, 4);
+    nnNetwork = new synaptic.Architect.Perceptron(5, 6, 6, 4);
     nnEntrenamiento = new synaptic.Trainer(nnNetwork);
 }
 
@@ -80,6 +83,7 @@ function datosDeEntrenamiento(param_entrada) {
     const value_max = Math.max(...salidasValidas)
 
     
+    console.log(nnNetwork.toJSON())
     
     console.log(salidas)
     console.log(salidasValidas)
@@ -97,7 +101,9 @@ function pausa() {
     menu.anchor.setTo(0.5, 0.5);
 }
 
-
+function entrenamiento(){    
+console.log(JSON.stringify(datosEntrenamiento));
+}
 
 function resetVariables() {
     // jugador.body.velocity.x = 0;
@@ -150,7 +156,7 @@ function desp_vertical(direccion){
 
 function update() {
     
-    juego.physics.arcade.collide(bola, jugador, colisionH, null, this);
+    //juego.physics.arcade.collide(bola, jugador, colisionH, null, this);
 
     //Distancia obtenida con la formula de distancia euclidiana
     var distancia = Math.sqrt(Math.pow(bola.x - jugador.x, 2) + Math.pow(bola.y - jugador.y, 2));    
@@ -166,8 +172,9 @@ function update() {
     
     var cuadrante = getCuadrante(distanciaBolaX,distanciaBolaY)
     console.log(cuadrante)
-    if(modoAuto == true && distancia <= 140){
-        switch(datosDeEntrenamiento( [bola.x,bola.y,distancia, cuadrante])){
+    if(modoAuto == true && distancia <= 120){
+        console.log("Rango para moverse")
+        switch(datosDeEntrenamiento([bola.x,bola.y,distanciaBolaX,distanciaBolaY,distancia])){
             case 0: // arriba
                 console.log("IA arriba")
                 desp_vertical("W")
@@ -190,13 +197,13 @@ function update() {
         }
         //console.log(datosDeEntrenamiento( [bola.x,bola.y,distancia, cuadrante]))
     }
-
-    if(modoAuto == false ){            
+    
+    if(modoAuto == false && jugadorMoviendose){            
         datosEntrenamiento.push({
-            'input': [bola.x,bola.y,distancia, cuadrante],
+            'input': [bola.x,bola.y,distanciaBolaX,distanciaBolaY,distancia],
             'output': [salida_arriba,salida_derecha,salida_abajo,salida_izquierda]
         });
-        //console.log("input",distancia,cuadrante, " Output ", salida_arriba,salida_derecha,salida_abajo,salida_izquierda)
+        console.log("input",bola.x,bola.y,distancia,distanciaBolaX,distanciaBolaY, " Output ", salida_arriba,salida_derecha,salida_abajo,salida_izquierda)
     }
     if(salida_abajo == 1 || salida_arriba == 1 || salida_derecha == 1 || salida_izquierda == 1){
         jugadorMoviendose = true;
@@ -214,7 +221,7 @@ function update() {
     if (modoAuto == false && abajo.isDown) {
         desp_vertical("S");
     }
-
+    
 }
 
 function getCuadrante(x, y) {
