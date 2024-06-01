@@ -13,3 +13,13 @@ Entregables/CNN/recolector de imagenes/robocasa/**
 Entregables/CNN/dataset2/**
 Entregables/CNN/dataset3/**
 *.h5
+
+
+
+Entregables/waldo/generador/waldo
+
+
+Entregables/waldo/generador/**
+Entregables/waldo/result/**
+Entregables/waldo/dataset/**
+Entregables/waldo/dataset2/**
