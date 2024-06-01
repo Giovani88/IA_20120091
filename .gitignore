@@ -23,3 +23,15 @@ Entregables/waldo/generador/**
 Entregables/waldo/result/**
 Entregables/waldo/dataset/**
 Entregables/waldo/dataset2/**
+Entregables/emociones/generador/emociones/**
+*.xml
+
+
+
+Entregables/waldo/generador/waldo
+
+
+Entregables/waldo/generador/**
+Entregables/waldo/result/**
+Entregables/waldo/dataset/**
+Entregables/waldo/dataset2/**
