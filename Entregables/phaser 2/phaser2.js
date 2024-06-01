@@ -170,9 +170,10 @@ function desp_vertical(direccion){
     },1000)                            
 }
 
+var cuadrante_anterior = 0
 function update() {
     
-    //juego.physics.arcade.collide(bola, jugador, colisionH, null, this);
+    juego.physics.arcade.collide(bola, jugador, colisionH, null, this);
 
     //Distancia obtenida con la formula de distancia euclidiana
     var distancia = Math.sqrt(Math.pow(bola.x - jugador.x, 2) + Math.pow(bola.y - jugador.y, 2));    
@@ -180,6 +181,7 @@ function update() {
     var distanciaBolaX = bola.x - jugador.x;
     var distanciaBolaY = bola.y - jugador.y;        
     var cuadrante = getCuadrante(distanciaBolaX,distanciaBolaY)
+    
     console.log(cuadrante)
     if(modoAuto == true && distancia <= 120){
         console.log("Rango para moverse")
@@ -219,7 +221,7 @@ function update() {
     if (modoAuto == false && abajo.isDown) {
         desp_vertical("S");
     }
-    if(modoAuto == false && jugadorMoviendose){ //Jugador moviendose para obtener una mayor cantidad de salidas           
+    if(modoAuto == false && jugadorMoviendose ){ //Jugador moviendose para obtener una mayor cantidad de salidas           
         datosEntrenamiento.push({
             //'input': [bola.x,bola.y,distanciaBolaX,distanciaBolaY,distancia],
             'input': [bola.x,bola.y,distanciaBolaX,distanciaBolaY,distancia],
@@ -230,6 +232,9 @@ function update() {
     if(salida_abajo == 1 || salida_arriba == 1 || salida_derecha == 1 || salida_izquierda == 1){
         jugadorMoviendose = true;
     }
+
+    cuadrante_anterior = getCuadrante(distanciaBolaX,distanciaBolaY)
+    console.log(cuadrante_anterior)
 
     
 }
