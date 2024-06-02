@@ -1,4 +1,4 @@
-# Entregables finales 
+# Proyectos finales 
 
 ### Proyectos realizados para la materia de inteligencia artificial. Enero - Junio 2024.
 
@@ -19,7 +19,7 @@ A continuación, se explicara a detalle el código requerido para la implementac
 ### 1.1 Librerías o dependencias requeridas
 Python 3.9
 
-Las siguientes librerias de Python:
+Las siguientes librerías de Python:
 * **cv2**: pip install opencv-contrib-python
 * **numpy 1.26.4**: pip install numpy
 * **matplotlib 3.9.0**: pip install matplotlib
@@ -551,3 +551,181 @@ Robo casa
 Asalto
 
 ![alt text](markdown/assets/cnn/asalto.png)
+
+# 2. ¿Donde está Wally?
+Este proyecto consiste en generar un modelo que permita reconocer al personaje de Wally en una imagen.
+
+### 2.1 Librerías o dependencias requeridas
+Python 3.9
+
+Las siguientes librerías de Python:
+* **cv2**: pip install opencv-contrib-python
+* **numpy 1.26.4**: pip install numpy
+* Para generar el **xml clasificador**, necesitaremos el programa de Cascade Trainer GUI. Link del sitio oficial: https://amin-ahmadi.com/cascade-trainer-gui/
+
+### 2.2 Función de rotación de imágenes
+Para generar el dataset de imágenes de Wally, se utilizaron algunas funciones de transformación de imágenes, una de ellas, es para rotar una imagen. A continuación, se muestra el código.
+
+En las primeras líneas del cuerpo de la función, se definen las dimensiones de salida que debera de tener la imagen transformada, que son de 50x50. 
+
+``` python
+import datetime
+def rotar(img, i):
+    # Dimensiones deseadas de salida
+    salida_ancho = 50
+    salida_alto = 50
+
+```
+Para evitar que al rotar la imagen, se generen **partes de la imagen de color negro**, antes de la rotación, se genera una imagen de fondo blanco de 50x50 pixeles, luego se redimensiona la imagen original para que las proporciones esten dentro del área de rotación. Despues se calcula el centro de la imagen redimensionada y la del fondo blanco.
+
+```python    
+    # Crear una imagen de fondo blanco de 50x50 píxeles
+    fondo_blanco = np.ones((salida_alto, salida_ancho, 3), dtype=np.uint8) * 255
+    
+    # Redimensionar la imagen original para que quepa en el área de rotación
+    h, w = img.shape[:2]
+    escala = min(salida_ancho/w, salida_alto/h)
+    nueva_ancho = int(w * escala)
+    nueva_alto = int(h * escala)
+    img_redimensionada = cv.resize(img, (nueva_ancho, nueva_alto))
+    
+    # Calcular el centro de la imagen redimensionada y del fondo blanco
+    centro_imagen = (nueva_ancho // 2, nueva_alto // 2)
+    centro_fondo = (salida_ancho // 2, salida_alto // 2)
+
+```
+
+Despues, se procede con la rotación, haciendo uso de la función **getRotationMatrix2D**() de opencv. Se le mandan los siguientes parametros:
+* **center**: Una tupla (x, y) que representa el punto alrededor del cual se rota la imagen
+* **angle**: El ángulo de rotación en grados. Los valores positivos rotan la imagen en sentido antihorario, y los valores negativos en sentido horario.
+* **scale**: Un factor de escala. Un valor de 1 significa que la imagen mantiene su tamaño original, valores mayores la amplían y valores menores la reducen.
+
+Una vez creada la matriz de rotación, se le aplica a la imagen redimensionada, haciendo uso de **warpAffine()**. Los parametros representan lo siguiente:
+
+* **src**: La imagen de entrada.
+* **M**: La matriz de transformación afín 2x3.
+* **dsize**: El tamaño de la imagen de salida en forma de tupla (ancho, alto).
+* **borderValue**: El borde que representa el color blanco (255,255,255)
+
+Finalmente, se obtiene un **timestamp** para no sobreescribir las imágenes transformadas.
+
+```python
+    # Crear la matriz de rotación
+    mw = cv.getRotationMatrix2D(centro_fondo, grados, 1)
+    
+    # Aplicar la rotación a la imagen redimensionada
+    img_rotada = cv.warpAffine(img_redimensionada, mw, (salida_ancho, salida_alto), borderValue=(255, 255, 255))
+
+    # Obtener el timestamp actual
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Guardar la imagen resultante
+    cv.imwrite(f'result/img_{i}_{timestamp}.png', img_rotada)
+```
+
+### 2.3 Función de modo espejo de imágenes
+Con el fin de obtener más imagenes a partir de una misma imagen base, se utiliza una función para aplicar el modo espejo a una imagen. El código se muestra a continuación.
+
+```python
+import datetime
+def espejo(img, i):
+    # Crea una imagen espejo usando flip
+    img_espejo = cv.flip(img, 1)
+
+    # Obtener el timestamp actual
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    cv.imwrite(f'result/img_{i}_{timestamp}.png', img_espejo)
+```
+
+Se hace uso de la función **flip()** de opencv, los parametros representan lo siguiente:
+* **src**: La imagen de entrada que se desea voltear.
+* **flipCode**: Un código que especifica cómo voltear la imagen. 
+  * 0: Voltea la imagen verticalmente (alrededor del eje x).
+  * 1: Voltea la imagen horizontalmente (alrededor del eje y).
+  * -1: Voltea la imagen tanto vertical como horizontalmente.
+
+Finalmente, se guarda la imagen transformada en un directorio destino, usando un timestamp para no sobreescribir imágenes previamente transformadas en el directorio.
+
+### 2.4 Función para generar subimagenes a partir de una imagen
+Esta función tiene como proposito el generar subimagenes a partir de una imagen, para obtener una colección de imagenes que serviran para la etiqueta de "Negativas" (n), es decir, las imágenes en donde **no esta** Wally.
+
+```python
+# Abre la imagen base
+img = cv2.imread('generador/base negativo/base8.png')
+
+# Obtiene las dimensiones de la imagen
+height, width = img.shape[:2]
+
+# Define el tamaño de las sub-imágenes
+sub_width, sub_height = 50, 50
+
+# Crea el directorio de salida si no existe
+output_dir = 'result'
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+
+# Recorre la imagen creando las sub-imágenes
+i = 0
+for y in range(height-sub_height, -1, -sub_height):
+    for x in range(width-sub_width, -1, -sub_width):
+        # Crea la sub-imagen
+        sub_img = img[y:y+sub_height, x:x+sub_width]
+        # Obtener el timestamp actual
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        # Guarda la sub-imagen
+        cv2.imwrite(os.path.join(output_dir, f'n{i}_{timestamp}.png'), sub_img)
+        i += 1                
+```
+
+### 2.5 Función para convertir a escala de grises una imagen
+La siguiente función convierte una imagen a escala de grises, utilizando la función de **cvtColor** 
+* **src**: La imagen de entrada.
+* **code**: El código que especifica el tipo de conversión de color. Para este se utiliza la constante **cv.COLOR_BGR2GRAY**
+
+```python
+def convertir_gris(img, i):
+    frame = cv.cvtColor(img, cv.COLOR_BGR2GRAY)    
+    cv.imwrite(f'dataset/n/wally{i}.png', frame)
+```
+
+### 2.6 Código para probar el modelo
+Una vez generado el XML clasificador a traves del software Cascade Trainer GUI, lo ponemos a prueba para encontrar a Wally, con el siguiente código.
+
+Primero, mediante la función de opencv **CascadeClassifier('cascade_v1.xml')** se manda como parametro la ruta del XML. Luego, en un frame leemos la imagen de test con **imread()**. Despues, el frame se transforma a escala de grises con la función de cv.**cvtColor()**.
+
+Posteriormente, se usa la función de **detectMultiScale**, la recibe los siguientes parametros:
+
+* **image**: La imagen en la que se detectan los objetos. Generalmente, esta imagen debe estar en escala de grises.
+* **scaleFactor**: Especifica cuánto reduce el tamaño de la imagen en cada escala de imagen. Por ejemplo, scaleFactor=1.1 significa que la imagen se reduce en un 10% en cada escala. Cuando tiende a ser menor que 1, el procesamiento es menos rapido y por lo tanto, se tendran menos falsos resultados, caso contrario, si es mayor a 1, el procesamiento es más rapido y por lo tanto, se tendran más falsos resultados. 
+* **minNeighbors**: Especifica cuántos vecinos deben tener cada rectángulo candidato para retenerlo. Un valor más alto da menos detecciones pero de mayor calidad.
+* **minSize**: Tupla que define el tamaño mínimo de los objetos a detectar. Por defecto es (30, 30).
+
+```python
+import cv2 as cv    
+
+wally = cv.CascadeClassifier('cascade_v1.xml')
+
+frame = cv.imread('assets/escenarios/escenario1b.png')
+
+gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+
+wallys = wally.detectMultiScale(gray, 1.4, 52)
+
+for (x, y, w, h) in wallys:
+    frame = cv.rectangle(frame, (x,y), (x+w, y+h), (0, 255, 0), 2)
+
+cv.imshow('Wally', frame)
+
+cv.waitKey(0)
+cv.destroyAllWindows()
+```
+
+Al final, se grafican rectangulos para cada resultado obtenido. A continuación, se muestran algunos ejemplos de los resultados.
+
+
+
+![alt text](markdown/assets/wally/wally1.png)
+
+![alt text](markdown/assets/wally/nieve.png)
+
+![alt text](markdown/assets/wally/espacio.png)
