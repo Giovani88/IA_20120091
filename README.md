@@ -722,10 +722,112 @@ cv.destroyAllWindows()
 
 Al final, se grafican rectangulos para cada resultado obtenido. A continuación, se muestran algunos ejemplos de los resultados.
 
-
-
 ![alt text](markdown/assets/wally/wally1.png)
 
 ![alt text](markdown/assets/wally/nieve.png)
 
 ![alt text](markdown/assets/wally/espacio.png)
+
+# 3. Reconocedor de emociones
+El proyecto conciste en generar un modelo clasificador que sea capaz de reconocer las siguientes emociones en las personas:
+
+* Felicidad
+* Enojo
+* Sorprendido
+
+### 3.1 Librerías o dependencias requeridas
+Python 3.9
+
+Las siguientes librerías de Python:
+* **cv2**: pip install opencv-contrib-python
+* **numpy 1.26.4**: pip install numpy
+
+### 3.2 Función para genera el XML clasificador
+Para generar el XML se utiliza el metodo Local Binary Patterns Histograms **(LBPH)**. El método LBPH es una técnica de reconocimiento facial en OpenCV que utiliza características locales de la imagen para identificar caras. Este método es eficaz y relativamente simple, basado en la textura de la imagen para realizar el reconocimiento.
+
+A continuación, se muestra el código para generar el XML.
+
+```python
+import cv2 as cv 
+import numpy as np 
+import os
+
+dataSet = "emociones"
+faces  = os.listdir(dataSet)
+
+labels = []
+facesData = []
+label = 0 
+for face in faces:
+    facePath = dataSet+'\\'+face
+    for faceName in os.listdir(facePath):
+        labels.append(label)
+        facesData.append(cv.imread(facePath+'\\'+faceName,0))
+    label = label + 1
+faceRecognizer = cv.face.LBPHFaceRecognizer_create()
+faceRecognizer.train(facesData, np.array(labels))
+faceRecognizer.write('emociones.xml')
+```
+Como se observa, se establece una ruta en donde se encuentra el dataset con las etiquetas para cada emoción, es decir, un subdirectorio por cada emoción para poder clasificarlas.
+
+Despues, se itera por cada subdirectorio y cada imagen contenida en el mismo. Hasta finalmente utilizar el metodo **train**, que recibe como parametro los frames de cada imagen leida, además de las etiquetas en formato de numpy.
+
+Finalmente, una vez entrenado, se guarda el xml con el metodo **write**, para que cuando necesitemos volver a utilizar el clasificador, no se tenga que volver a entrenar con el dataset.
+
+### 3.3 Función para probar el clasificador
+Para poner a prueba el modelo, se muestra el siguiente codigo:
+
+Primero, se crea una instancia de FaceRecognizer con el metodo **LBPHFaceRecognizer_create()** y se carga el xml previamente generado.
+
+```python
+import cv2 as cv
+
+faceRecognizer = cv.face.LBPHFaceRecognizer_create()
+faceRecognizer.read("emociones.xml")
+```
+
+Segundo, se define cual es la lista de etiquetas disponibles para clasificar. Se carga, además, el **"haarcascade_frontalface_alt"**, clasificador en cascada para la detección de rostros.
+
+```python
+faces = ["enojo","feliz","sorpresa"]
+rostro = cv.CascadeClassifier('haarcascade_frontalface_alt.xml')
+```
+
+Despues, se entra al ciclo infinito para reconocer rostros, hasta que se presione la tecla **ESC** del teclado.
+
+Se lee el frame capturado por la camara de video, luego se convierte a escala de grises con la función de **cvtColor(frame, cv.COLOR_BGR2GRAY)** y se hace uso de la función **detectMultiScale(gray, 1.3, 3)** con una escala de 1.3, y un **minNeighbors** de 3.
+
+```python
+cap = cv.VideoCapture(0)
+while True:
+    ret, frame = cap.read()
+    if ret == False: break
+    gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    cpGray = gray.copy()
+    rostros = rostro.detectMultiScale(gray, 1.3, 3)
+```
+Posteriormente, se procesa cada rostro detectado. Tomando un area de interes correspondiente al rostro detectado, luego se redimensiona a 100x100 pixeles. Se predice la emoción usando el modelo LBPH con el metodo **predict**.
+
+Si la confianza de predicción es mayor a 80, se toma como desconocido, de lo contrario, si el nivel es menor a 80, se acepta y se muestra el texto con la emoción detectada como resultado.
+
+```python
+    for(x, y, w, h) in rostros:
+        frame2 = cpGray[y:y+h, x:x+w]
+        frame2 = cv.resize(frame2,  (100,100), interpolation=cv.INTER_CUBIC)
+        result = faceRecognizer.predict(frame2)        
+        if result[1] < 80:
+            cv.putText(frame,'{}'.format(faces[result[0]]),(x,y-25),2,1.1,(0,255,0),1,cv.LINE_AA)
+            cv.rectangle(frame, (x,y),(x+w,y+h),(0,255,0),2)
+        else:
+            cv.putText(frame,'No identificado',(x,y-20),2,0.8,(0,0,255),1,cv.LINE_AA)
+            cv.rectangle(frame, (x,y),(x+w,y+h),(0,0,255),2) 
+    cv.imshow('frame', frame)
+    k = cv.waitKey(1)
+    if k == 27:
+        break
+cap.release()
+cv.destroyAllWindows()
+
+```
+
+En el método **LBPH** valores bajos de confianza indican alta similitud y por lo tanto, alta confianza en la predicción. Valores altos de confianza indican baja similitud y por lo tanto, baja confianza en la predicción.

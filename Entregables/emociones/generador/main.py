@@ -4,7 +4,6 @@ import os
 
 dataSet = "emociones"
 faces  = os.listdir(dataSet)
-print(faces)
 
 labels = []
 facesData = []
@@ -15,7 +14,6 @@ for face in faces:
         labels.append(label)
         facesData.append(cv.imread(facePath+'\\'+faceName,0))
     label = label + 1
-#print(np.count_nonzero(np.array(labels)==0)) 
 faceRecognizer = cv.face.LBPHFaceRecognizer_create()
 faceRecognizer.train(facesData, np.array(labels))
 faceRecognizer.write('emociones.xml')

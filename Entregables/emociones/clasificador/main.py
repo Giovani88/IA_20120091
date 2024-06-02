@@ -1,11 +1,7 @@
 import cv2 as cv
-import os 
 
 faceRecognizer = cv.face.LBPHFaceRecognizer_create()
-#faceRecognizer.read("EmocionesLBPHZwei.xml")
-faceRecognizer.read("EmocionesLBPHZwei.xml")
-#dataSet = 'C:\\Users\\Jorgi\\Desktop\\Persones'
-# faces  = os.listdir(dataSet)
+faceRecognizer.read("emociones.xml")
 faces = ["enojo","feliz","sorpresa"]
 cap = cv.VideoCapture(0)
 rostro = cv.CascadeClassifier('haarcascade_frontalface_alt.xml')
@@ -20,7 +16,7 @@ while True:
         frame2 = cv.resize(frame2,  (100,100), interpolation=cv.INTER_CUBIC)
         result = faceRecognizer.predict(frame2)
         cv.putText(frame, '{}'.format(result), (x,y-20), 1,3.3, (255,255,0), 1, cv.LINE_AA)
-        if result[1] < 100:
+        if result[1] < 80:
             cv.putText(frame,'{}'.format(faces[result[0]]),(x,y-25),2,1.1,(0,255,0),1,cv.LINE_AA)
             cv.rectangle(frame, (x,y),(x+w,y+h),(0,255,0),2)
         else:
