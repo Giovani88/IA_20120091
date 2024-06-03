@@ -1151,3 +1151,339 @@ Para el diseño del juego, se ambiento en la animación de Dragon Ball Z, por lo
 
 
 ![alt text](markdown/assets/phaser1/goku_tieso.png)
+
+# 5. Juego Phaser II. Bala rebotando
+En este segundo juego usando Phaser como librería, una bala podrá rebotar en las paredes del juego y el jugador, situado siempre en el centro, debera esquivar la bala. El jugador podra desplazarse arriba, derecha, abajo e izquierda. Despúes de 2 segundos, el jugador regresara al centro del mapa. Si el jugador colisiona con la bala, el juego se termina.
+
+### 5.1 Librerías o dependencias requeridas
+Lenguaje de desarrollo: **Javascript**
+* **Phaser**: 2.7.3
+* **Synaptic**: 1.0.10
+
+### 5.2 Declaración de variables
+Primero, se definen las variables y constantes globales, como el tamaño del frame del juego (**w** y **h**). También se declaran variables para almacenar instancias relacionadas con el juego, **controlar el estado del jugador**, gestionar las **redes neuronales**, y para guardar los datos de entrenamiento en arreglos.
+
+```js
+const jugador_x = w /2 - 15 
+const jugador_y = h/2 - 25  
+const bola_x =0 
+const bola_y =0
+
+var w = 600;
+var h = 500;
+
+var jugador;
+var bola;
+
+var fondo;
+var menu;
+
+var jugadorMoviendose = false
+
+var modoAuto = false, eCompleto = false;
+var nnNetwork, nnEntrenamiento, nnSalida, datosEntrenamiento = [];
+
+var salida_arriba = 0
+var salida_izquierda = 0
+var salida_derecha = 0
+var salida_abajo = 0
+
+var juego = new Phaser.Game(w, h, Phaser.CANVAS, '', { preload: preload, create: create, update: update, render: render});
+```
+
+Al final, se crea una instancia de la clase **Phaser.Game**, que es crucial para el juego. Al crear esta instancia, se envían los siguientes parámetros: el ancho y alto del área del juego, el tipo de renderizado (CANVAS) y, por último, un objeto con funciones de tipo **callback**, las cuales se detallan a continuación:
+
+### 5.3 Función preload
+**preload**: esta función se utiliza para cargar todos los recursos (imágenes, videos, audio, sprites, etc.) necesarios antes de que el juego comience. 
+
+```js
+function preload() {
+    juego.load.image('bola',"assets/sprites/purple_ball.png")    
+    juego.load.image('jugador', 'assets/sprites/goku.png');
+    juego.load.image('menu', 'assets/game/menu.png');
+    juego.load.image('fondo', 'assets/game/fondo_n.jpg');
+}
+```
+
+### 5.4 Función create
+**create**: Se utilizan los recursos cargados en la función *preload* para inicializar objetos y configurar el entorno del juego. Esta función se ejecuta una sola vez, después de que *preload* ha terminado su ejecución.
+
+A continuación, se explicara el cuerpo de la función.
+
+#### 5.4.1 Configuración de física y fps
+Para este juego, se quita la gravedad en el eje Y, para permitir que la bala no tenga problemas al llevar una trayectoria creciente sobre el eje (x,y).
+```js
+function create() {
+    juego.physics.startSystem(Phaser.Physics.ARCADE);
+```
+
+#### 5.4.2 Creación de objetos
+Se utilizar la instancia creada anteriormente **juego** y con funciones que provee Phaser, se le agregan sprites al mundo. Se definen las coordenadas x, y, y el identificador del recurso.
+
+* fondo
+* jugador
+* bala
+
+```js
+    fondo = juego.add.tileSprite(0, 0, w, h, 'fondo');
+    jugador = juego.add.sprite(w /2 - 15 , h/2 - 25, 'jugador');
+    bola = juego.add.sprite(bola_x,bola_y, 'bola');
+```
+
+#### 5.4.3 Habilitación de animaciones y limite de colisiones
+Para el jugador y bala, se habilita el limite de colisión con el borde del mapa y las fisicas
+```js
+    juego.physics.enable(jugador);
+    juego.physics.enable(bola);
+    jugador.body.collideWorldBounds = true;
+    bola.body.collideWorldBounds = true;
+```
+Luego, al jugador se le quita la gravedad en Y y se establece como true la propiedad de **immovable**, con el propósito de que si la bala colisiona con el jugador, el jugador **se quede en el centro** y no se mueva por el impacto.
+
+Para lograr que la bala tenga el efecto de rebotar en las paredes del mapa, se establece **bounce.set(1)** y una **velocidad de 150**.
+
+```js
+    jugador.body.gravity.y = 0
+    jugador.body.immovable = true;
+    bola.body.bounce.set(1)
+    bola.body.velocity.set(150)
+```
+
+#### 5.4.4 Asociación de teclas
+Para lograr que el jugador se mueva al presionar ciertas teclas del teclado, se hace lo siguiente:
+
+**Desplazamiento a la derecha**
+
+Se le asigna a la tecla **D**
+```js
+    derecha = juego.input.keyboard.addKey(Phaser.Keyboard.D);
+```
+**Desplazamiento a la izquierda**:
+
+Se le asigna la tecla **A**
+```js
+    izquierda = juego.input.keyboard.addKey(Phaser.Keyboard.A);
+```
+
+**Desplazamiento superior**:
+
+Se le asigna la tecla **W**
+```js
+    arriba = juego.input.keyboard.addKey(Phaser.Keyboard.W);
+```
+
+**Desplazamiento inferior**:
+
+Se le asigna la tecla **S**
+```js
+    abajo = juego.input.keyboard.addKey(Phaser.Keyboard.S);
+```
+
+#### 5.4.5 Creación de red neuronal
+Para esta implementación, se requiere de una sola red neuronal. La cual tiene 5 neuronas en la capa de entrada, 2 capas ocultas de 6 neuronas y una capa de salida con 4 neuronas. Una por cada movimiento del jugador posible.
+
+```js
+    nnNetwork = new synaptic.Architect.Perceptron(5, 6, 6, 4);
+    nnEntrenamiento = new synaptic.Trainer(nnNetwork);
+```
+
+Es importante inicializar el arreglo de entrenamiento como se muestra a continuación, para evitar entrenamientos con datos vacios por parte del usuario.
+
+```js
+    datosEntrenamiento.push({
+        'input': [bola.x,bola.y,0,0,0],
+        'output': [salida_arriba,salida_derecha,salida_abajo,salida_izquierda]
+    });
+```
+
+### 5.5 Función Update
+Es la función que se encarga de actualizar constantemente el estado del juego.
+
+A continuación, se detalla cada componente de la función update.
+
+#### 5.5.1 Detección de colisiones 
+En la función update, se encuentra un componente importante del juego: la detección de colisiones. La instancia del juego proporciona un método para la detección de colisiones, como se muestra a continuación:
+
+```js
+    juego.physics.arcade.collide(bola, jugador, colisionH, null, this);
+```
+
+Se envian las instancias de **bala** y **jugador** para la detección de colision, si los dos objetos se encuentran en ese estado, entonces se ejecuta la función de **colisionH**.
+
+#### 5.5.2 Cálculos de la bala
+Para el proceso de datos de entrada para la red, se hacen algunos calculos que giran en torno a bala, los cuales son.
+
+**Distancia euclidiana**
+
+Para la detección de la distancia de dos cuerpos, se hace uso de la formula euclidiana. La cual es: 
+
+> d = √((x2 - x1)² + (y2 - y1)²)
+
+```js
+//Distancia obtenida con la formula de distancia euclidiana
+    var distancia = Math.sqrt(Math.pow(bola.x - jugador.x, 2) + Math.pow(bola.y - jugador.y, 2));    
+```
+
+**Cuadrante**
+
+Para obtener el cuadrante de la bala, se toma como referencia al jugador como el origen del mapa en el eje (x,y), asi como se muestra a continuación.
+
+```js
+    var distanciaBolaX = bola.x - jugador.x;
+    var distanciaBolaY = bola.y - jugador.y;        
+    var cuadrante = getCuadrante(distanciaBolaX,distanciaBolaY)
+```
+
+La función getCuadrante, se detalla en seguida.
+
+```js
+function getCuadrante(x, y) {
+    if (x > 0 && y < 0) {
+        return 1;
+    } else if (x < 0 && y < 0) {
+        return 2;
+    } else if (x < 0 && y > 0) {
+        return 3;
+    } else if (x > 0 && y > 0) {
+        return 4;
+    }
+    return 0
+}
+```
+Dependiendo de los valores positivos o negativos, de la posición en X y Y, se regresa el número del cuadrante al que representan esas coordenadas.
+
+#### 5.5.3 Modo manual
+El modo manual es por defecto al iniciar el juego, cuando esta bandera esta activada, se realizan los siguientes bloques de código dentro de la función update.
+
+**Desplazamientos del jugador**
+
+Se valida si alguna de las teclas de acción definidas anteriormente es presionada, si esta presionada, entonces se hace el llamado a la función de desplazamiento horizontal o vertical, según sea el caso. Más adelante se explicaran las funciones.
+
+```js
+    if (modoAuto == false && izquierda.isDown) {        
+        desp_horizontal("A");
+    }
+    if (modoAuto == false && derecha.isDown) {
+        desp_horizontal("D");
+    }
+    if (modoAuto == false && arriba.isDown) {
+        desp_vertical("W");
+    }
+    if (modoAuto == false && abajo.isDown) {
+        desp_vertical("S");
+    }
+```
+
+**Datos de entrenamiento**
+
+Se guarda en el arreglo de entrenamiento, como entrada, las coordenadas X y Y de la bala, la distancia euclidiana y las distancias para cada eje. Como salida, se envian las cuatro variables que representan el estado del jugador en determinada dirección. Estas variables **solo toman valores de 0 a 1**.
+```js
+    if(modoAuto == false && jugadorMoviendose ){        
+        datosEntrenamiento.push({
+            'input': [bola.x,bola.y,distanciaBolaX,distanciaBolaY,distancia],
+            'output': [salida_arriba,salida_derecha,salida_abajo,salida_izquierda]
+        });
+    }
+```
+
+#### 5.5.4 Modo automático
+Al seleccionar la opción de "Modo automático" en el menu de pausa, se ejecutaran los siguientes bloques de codigo en la función update.
+
+Primero, se entrena la red con el siguiente bloque de código.
+
+```js
+function enRedNeural() {
+    nnEntrenamiento.train(datosEntrenamiento, { rate: 0.0003, iterations: 10000, shuffle: true });
+}
+```
+Una vez terminado el entrenamiento, se hace uso de la función **datosDeEntrenamiento** para enviar valores de entrada y esperar un resultado como salida de la red. Si el resultado es alguna de los valoes esperados, entonces se produce el desplazamiento en el jugador.
+
+Además, se valida que la distancia sea menor o igual a 120, esto es para delimitar el rango de acción del jugador en el modo automático.
+
+```js
+if(modoAuto == true && distancia <= 120){        
+        switch(datosDeEntrenamiento([bola.x,bola.y,distanciaBolaX,distanciaBolaY,distancia])){
+            case 0: // arriba
+                desp_vertical("W")
+            break;
+            case 1: //derecha
+                desp_horizontal("D")
+            break;
+            case 2: //abajo
+                desp_vertical("S")
+            break;
+            case 3: //izquierda
+                desp_horizontal("A")
+            break;
+        }
+    }
+```
+Se le mandan los mismos datos de entrada que se mandan cuando se estan almacenando los valores en el modo manual.
+
+A continuación, se detalla la función de **datosDeEntrenamiento**.
+
+```js
+function datosDeEntrenamiento(param_entrada) {
+    const salidas = nnNetwork.activate(param_entrada);
+    const umbral = 0.5    
+    const salidasValidas = salidas.filter((e)=>e>umbral);
+    const value_max = Math.max(...salidasValidas)
+    return salidas.indexOf(value_max)
+}
+```
+Activa la red con el arreglo de valores de entrada recibidos, luego se define un valor mínimo o umbral, para determinar si los valores de salida son lo suficientemente grandes como para realizar la acción de moverse. Finalmente, se retorna el indice del valor más grande del arreglo de salidas.
+
+### 5.6 Función desplazamiento vertical y horizontal
+Para lograr los desplazamientos, se crean las siguientes funciones, una para el desplazamiento vertical y otra para el horizonatal.
+
+**Desplazamiento vertical**
+
+```js
+function desp_vertical(direccion){
+    if (jugadorMoviendose)
+        return
+    if (direccion == "W"){
+        salida_arriba = 1
+    }else{
+        salida_abajo = 1
+    }
+    const y = (direccion == "W")? jugador.position.y - 200 : jugador.position.y + 200
+    jugador.position.y = y
+    setTimeout(()=>{
+        jugadorMoviendose=false;
+        jugador.position.y = jugador_y;
+        salida_arriba = salida_abajo = 0
+    },1000)                            
+}
+```
+
+**Desplazamiento horizontal**
+
+```js
+function desp_horizontal(direccion){
+    if (jugadorMoviendose)
+        return
+    if (direccion == "A"){
+        salida_izquierda = 1
+    }else{
+        salida_derecha = 1
+    }
+    const x = (direccion == "A")? jugador.position.x - 200 : jugador.position.x + 200
+    jugador.position.x = x
+    setTimeout(()=>{
+        jugadorMoviendose=false;
+        jugador.position.x = jugador_x;
+        salida_izquierda = salida_derecha = 0
+    },1000)                            
+}
+```
+
+Como se observa en ambas funciones, primero se valida que el jugador actualmente no se encuentre desplazado. Dependiendo de la tecla presionada, se activa la bandera respectiva que guarda el estado del desplazamiento del jugador (salida). 
+
+Finalmente, despúes de 2 segundos de desplazo, se regresa al jugador a su posición original y se resetean las variables de los desplazamientos a cero.
+
+### 5.7 Implementación
+
+![alt text](markdown/assets/phaser2/phaser2_1.png)
+
+![alt text](markdown/assets/phaser2/phaser2_2.png)
