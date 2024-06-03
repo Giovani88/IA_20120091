@@ -830,4 +830,324 @@ cv.destroyAllWindows()
 
 ```
 
-En el método **LBPH** valores bajos de confianza indican alta similitud y por lo tanto, alta confianza en la predicción. Valores altos de confianza indican baja similitud y por lo tanto, baja confianza en la predicción.
+En el método **LBPH** valores **bajos de confianza** indican **alta similitud** y por lo tanto, alta confianza en la predicción. Valores **altos de confianza** indican **baja similitud** y por lo tanto, baja confianza en la predicción.
+
+
+# 4. Juego Phaser 3 naves
+Este proyecto consiste en implementar una red neuronal que con las entradas y salidas logre hacer el modo automático en el juego. Se trata de 3 naves que disparan balas, una bala cae verticalmente sobre el jugador, otra se desplaza horizontalmente sobre el jugador y la tercera bala va en diagonal. El jugador puede hacer saltos o moverse a la izquierda, si cualquiera de las balas colisiona con la hitbox del jugador, el juego termina.
+
+### 4.1 Librerías o dependencias requeridas
+Lenguaje de desarrollo: **Javascript**
+* **Phaser**: 2.7.3
+* **Synaptic**: 1.0.10
+
+### 4.2 Declaración de variables
+Primero se empieza con la declaración de variables y constantes globales. Como el tamaño del frame del juego **w** y **h**, variables para guardar instancias referentes al juego, variables para controlar el estado del jugador, las redes neuronales  y los arreglos para guardar los datos de entrenamiento.
+
+```js
+var w = 800;
+var h = 400;
+var jugador;
+var fondo;
+
+var bala, bala2, bala3, balaD = false;
+var nave, nave2, nave3;
+
+var salto, derecha, izquierda;
+var menu;
+
+var velocidadBala;
+var despBala;
+
+var estatusAire;
+var estatusIzquierda = 0;
+
+var nnNetwork, nnEntrenamiento, datosEntrenamiento = [];
+var nnNetwork2, nnEntrenamiento2, datosEntrenamiento2 = []
+var nnNetwork3, nnEntrenamiento3, datosEntrenamiento3 = []
+
+var modoAuto = false, eCompleto = false;
+var desplazo = false
+
+const bala3_x = w - 185
+const bala3_y = h - 405
+const bala2_velocidad = 85
+
+var juego = new Phaser.Game(w, h, Phaser.CANVAS, '', { preload: preload, create: create, update: update, render: render });
+```
+Al final, se crea una instancia de la clase **Phaser.Game** muy importante para el juego. Cuando se crea la instancia se envían los siguientes parámetros, el **ancho** y **alto** que deberá tener el area del juego, el tipo de renderizado, que en este caso es **CANVAS** y por ultimo, se manda en un objeto funciones tipo **call back**. Las cuales se detallan a continuación:
+
+### 4.3 Función preload
+**preload**: esta función se utiliza para cargar todos los recursos (imágenes, videos, audio, sprites, etc.) necesarios antes de que el juego comience. 
+
+Como se muestra en el código, se carga antes de comenzar el juego los archivos media, como sprites e imagenes. Se hace el llamado a la función correspondiente, dependiendo del tipo de recurso a cargar, y después de manda un identificador único y la ruta de acceso, entre otros parámetros de configuración.
+
+```js
+function preload() {
+    juego.load.image('fondo', 'assets/game/db_escenario2-min.png');
+    juego.load.spritesheet('mono', 'assets/sprites/kokun.png', 34, 48);
+    juego.load.image('nave', 'assets/game/nave.png');
+    juego.load.image('bala', 'assets/sprites/purple_ball.png');
+    juego.load.image('menu', 'assets/game/menu.png');
+    juego.load.image('goku_tieso', 'assets/game/koku_tieso.png', 38, 50);
+}
+```
+### 4.4 Función create
+**create**: Se emplea los recursos cargados en la función *preload* para inicializar objetos y configuración del entorno del juego. Esta función se ejecuta una sola vez, una ves que preload termino de ejecutarse.
+
+A continuación, se explicara el cuerpo de la función.
+
+#### 4.4.1 Configuración de física y fps
+Se establece el sistema de física de Arcade de Phaser, la gravedad del eje Y de 800 y la velocidad de fotogramas, de 30 fps.
+
+```js
+function preload() {
+    juego.physics.startSystem(Phaser.Physics.ARCADE);
+    juego.physics.arcade.gravity.y = 800;
+    juego.time.desiredFps = 30;
+```
+
+#### 4.4.2 Creación de objetos
+Se utilizar la instancia creada anteriormente **juego** y con funciones que provee Phaser, se le agregan sprites al mundo. Se definen las coordenadas x, y, y el identificador del recurso.
+* fondo
+* nave
+* nave2
+* nave3
+* bala
+* bala2
+* bala3
+
+```js
+    fondo = juego.add.tileSprite(0, 0, w, h, 'fondo');
+    nave = juego.add.sprite(w - 110, h - 55, 'nave');
+    nave2 = juego.add.sprite(w - 800, h - 400, 'nave');
+    nave3 = juego.add.sprite(w - 200, h - 400, 'nave');
+    bala = juego.add.sprite(w - 100, h, 'bala');
+    bala2 = juego.add.sprite(w - 755, h - 405, 'bala');
+    bala3 = juego.add.sprite(bala3_x, bala3_y, 'bala');
+```
+
+#### 4.4.3 Habilitación de animaciones y limite de colisiones
+Se habilitan las físicas para el objeto jugador y bala, y se habilita la detección de colisiones con los limite del mundo. Para que la bala respete los limites del mundo y no se salga más allá de los mismos.
+
+```js
+    juego.physics.enable(jugador);
+    jugador.body.collideWorldBounds = true;
+
+    juego.physics.enable(bala);
+    bala.body.collideWorldBounds = true;
+
+    juego.physics.enable(bala2);
+    bala2.body.collideWorldBounds = false;
+
+    juego.physics.enable(bala3);
+    bala3.body.collideWorldBounds = false;
+```
+
+#### 4.4.4 Creación de red neuronal
+Se crean tres redes neuronales.
+- **red1**: Controla la bala que va sobre el eje X, la cual tiene 2 para la capa de entrada, 2 capas ocultas con 6 neuronas, y una en la capa de salida.
+- **red2**: Controla la bala que va sobre el eje Y, la cual tiene 3 neuronas para la capa de entrada, 2 capas ocultas con 6 neuronas y 1 neurona en la capa de salida.
+- **red3**: Controla la interacción del jugador con la bala en diagonal, tiene 2 neuronas en la capa de entrada, 2 capas ocultas con 6 neuronas, y una neurona en la capa de salida.
+
+```js
+    nnNetwork = new synaptic.Architect.Perceptron(2, 6, 6, 1);
+    nnEntrenamiento = new synaptic.Trainer(nnNetwork);
+
+    nnNetwork2 = new synaptic.Architect.Perceptron(3, 6, 6, 1);
+    nnEntrenamiento2 = new synaptic.Trainer(nnNetwork2);
+
+    nnNetwork3 = new synaptic.Architect.Perceptron(2, 6, 6, 1);
+    nnEntrenamiento3 = new synaptic.Trainer(nnNetwork3);
+```
+
+### 4.5 Función Update
+Es la función que se encarga de constantemente actualizar el estado del juego, por ejemplo la actualización de la posición de los sprites, como el siguiente ejemplo:
+```js
+function update() {
+    fondo.tilePosition.x -= 1; 
+```
+A continuación, se detalla cada componente de la función update.
+
+#### 4.5.1 Detección de colisiones 
+En la función de update, encontramos un componente importante del juego, la detección de colisiones. La instancia provee un metodo para la detección de colisiones, como se muestra a continuación:
+
+```js
+    juego.physics.arcade.collide(bala, jugador, colisionH, null, this);
+    juego.physics.arcade.collide(bala2, jugador, colisionH, null, this);
+    juego.physics.arcade.collide(bala3, jugador, colisionH, null, this);
+```
+
+Se envian las instancias de **bala** y **jugador** para la detección de colision, si los dos objetos se encuentran en ese estado, entonces se ejecuta la función de **colisionH**.
+
+#### 4.5.2 Controlador de la bala
+En la función update, se hacen varios procesos referentes al objeto de bala. 
+
+* **Calculo de distancia**: Usando la función Math, se calcula la diferencia de la distancia en el eje X de la posición del jugador y la bala para guardarse en una variable.
+
+```js
+    despBala = Math.floor(jugador.x - bala.x);
+    despBala2 = Math.floor(jugador.y - bala2.y);
+    despBala3 = Math.floor(jugador.x - bala3.x);
+    despBala3b = Math.floor(jugador.y - bala3.y);
+```
+
+* **Manejador de disparado de bala**: Para hacer la función del disparo de bala en el eje x, se ejecuta la siguiente rutina
+
+```js
+function disparo(){
+    const max = modoAuto ? 700 : 500
+    velocidadBala = -1 * velocidadRandom(300, max);
+    bala.body.velocity.y = 0;
+    bala.body.velocity.x = velocidadBala;
+    balaD = true;
+}
+```
+Se obtiene una velocidad aleatoria y se le asigna a la propiedad velocity, del body del objeto bala. Al final se activa una bandera, para controlar los disparos de la bala.
+
+Después, en la misma función update, se hace la validación, de que si la posición de la bala ya es menor al eje x del mundo, es decir, si ya no es visible en el mundo, entonces se reinician variables, entre ellas, la variable bandera que se activó cuando se disparó.
+
+```js
+    if( bala.position.x <= 0  ){
+            resetVariables();
+        }
+```
+Para la bala del eje Y y digonal, se valida la reposición de la bala de la siguiente manera, respectivamente:
+
+```js
+    if (bala2.y >= 380) {
+            resetBala2()
+        }
+    if (bala3.position.x <= 0 ) {
+            resetPositionBala3()
+        }
+```
+
+#### 4.5.3 Modo manual
+El modo manual es por defecto cuando empieza el juego, dentro de la función update, cuando el modo esta en manual, ocurren una serie de instrucciones, las cuales se muestran a continuación.
+```js
+    if (modoAuto == false) {
+        juegoManual()
+    }  
+```
+Validación dentro de la función de update, que si se cumple, se ejecuta el siguiente código de bloque.
+
+```js
+function juegoManual(){
+    if (salto.isDown && jugador.body.onFloor()) {
+        saltar();
+    }
+
+    if (izquierda.isDown) {
+        desp_izquierda()
+    }
+    if (bala.x > 0) {
+        datosEntrenamiento.push({
+            'input': [despBala, velocidadBala],
+            'output': [estatusAire]
+        });
+
+    }
+    if (bala2.y > 100 && despBala2 > 0) {
+        datosEntrenamiento2.push({
+            'input': [despBala2, jugador.position.x, bala2.position.x],
+            'output': [estatusIzquierda]
+        });
+    }
+    if (bala3.y > 200 && bala3.x > 0) {
+        datosEntrenamiento3.push({
+            'input': [despBala3, despBala3b],
+            'output': [ estatusIzquierda]
+        });
+    }
+}
+```
+
+Como se observa, las primeras validaciones controlan la mecánica de movimiento del jugador. La primera condicional, controla la mecánica del salto, si se presiona la tecla de **ESPACIO** y el jugador esta en el suelo, entonces ejecuta la **rutina de salto**. La segunda condicional, controla el desplazamiento a la izquierda del jugador, si se presiona la tecla **A**, entonces ejecuta la función para realizar el desplazamiento.
+
+Asi mismo, lo siguiente es recolectar los datos de entrenamiento y de salida para entrenar a las redes neuronales posteriormente. En cada arreglo se inserta un objeto con las **entradas** (input) y **salidas** (output) en un arreglo. En las entradas se mandan los desplazamientos entra las balas y el jugador, y coordenadas. En las salidas se manda una variable que va de **0 a 1** para indicar si el jugador hizo un determinado movimiento.
+
+#### 4.5.4 Modo automático
+Al seleccionar la opción de "Modo automático" en el menu de pausa, se ejecutaran los siguientes bloques de codigo en la función update.
+
+Primero se entrena a la red, como se muestra a continuación
+```js
+function enRedNeural() {
+    nnEntrenamiento.train(datosEntrenamiento, { rate: 0.0003, iterations: 10000, shuffle: true });
+    nnEntrenamiento2.train(datosEntrenamiento2, { rate: 0.0003, iterations: 10000, shuffle: true });
+    nnEntrenamiento3.train(datosEntrenamiento3, { rate: 0.0003, iterations: 10000, shuffle: true });
+}
+```
+Esta función es sincrona, por lo que, hasta que se termine de entrenar la red, el flujo del programa podra seguir avanzando.
+
+Después, en la función de update se valida si el modo es automático:
+
+```js
+    if (modoAuto == true) {
+        juegoAutomatico()
+    }
+```
+Entonces, se ejecutan los siguientes bloques de código.
+```js
+function juegoAutomatico(){
+    if (bala2.y > 200) {
+        const result = datosDeEntrenamiento2([despBala2, jugador.x, bala2.x])
+        if (result) {            
+            desp_izquierda()            
+        }
+    }
+
+    if (bala3.y > 300 && bala3.x > 0) {
+        if (datosDeEntrenamiento3([despBala3, despBala3b])) {
+            desp_izquierda()            
+        }
+    }
+    if (bala.x > 0 && jugador.body.onFloor()) {
+        if (datosDeEntrenamiento([despBala, velocidadBala])) {
+            saltar();
+        }
+    }    
+}
+```
+
+Como se puede observar, en cada condicional, se hace uso de un método que recibe un arreglo de datos y devuelve una salida, y dependiendo del resultado de la salida, se ejecutaria la acción movimiento del jugador. 
+
+En la primer red que representa a la bala sobre el eje Y, se manda el desplazamiento (diferencia) en el eje Y de la bala con el jugador, y las coordenadas en el eje X del jugador y la bala.
+
+En la segunda red que se asocia a la bala en diagonal, se manda el desplazamiento (diferencia) en el eje X y Y del jugador contra la bala en diagonal.
+
+En la tercer red que representa a la bala sobre el eje X, se manda el desplazamiento (diferencia) en el eje X del jugador y la bala, y la velocidad de la misma, ya que, esta bala a diferencia de las otras, tiene una velocidad variante.
+
+Los metodos se detallan a continuación.
+
+```js
+function datosDeEntrenamiento(param_entrada) {
+    nnSalida = nnNetwork.activate(param_entrada);
+    const result = Math.round(nnSalida[0] * 100);
+    return result >= 40;
+}
+
+function datosDeEntrenamiento2(param_entrada) {
+    nnSalidaMov = nnNetwork2.activate(param_entrada);    
+    const result = Math.round(nnSalidaMov[0] * 100);    
+    return result > 20        
+}
+
+function datosDeEntrenamiento3(param_entrada) {
+    nnSalidaMov3 = nnNetwork3.activate(param_entrada);
+    const result = Math.round(nnSalidaMov3[0] * 100);    
+    return result >= 9
+}
+```
+
+Como todas la redes neuronales nos ofrecen una salida de una sola neurona, se toma la primer posición del arreglo que resulta de activar la red neuronal con los datos de entrada enviados desde la función de update.
+
+El valor de salida se multiplica por 100 y se **valida que sea mayor al valor minimo esperado para poder realizar el movimiento al jugador**. Si no es el caso, entonces se retorna un **false** y no se ejecuta la función de movimiento.
+
+### 4.6 Implementación
+Para el diseño del juego, se ambiento en la animación de Dragon Ball Z, por lo tanto, se utilizan sprites de Goku para el jugador, fondos y naves de la misma.
+
+![alt text](markdown/assets/phaser1/image.png)
+
+
+![alt text](markdown/assets/phaser1/goku_tieso.png)

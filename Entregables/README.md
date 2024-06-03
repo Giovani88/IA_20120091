@@ -39,7 +39,7 @@ juego.physics.arcade.gravity.y = 800;
 juego.time.desiredFps = 30;
 ```
 #### 3.2 Creación de objetos
-Se utilizar la instancia creada anteriormente **juego** y con funciones que provee Phaser, se le agregan sprites al mundo. Se definen las coordenadas x, y, y el identificador del recurso.
+Se utiliza la instancia creada anteriormente **juego** y con funciones que provee Phaser, se le agregan sprites al mundo. Se definen las coordenadas x, y, y el identificador del recurso.
 ```js
 fondo = juego.add.tileSprite(0, 0, w, h, 'fondo');
 nave = juego.add.sprite(w-100, h-70, 'nave');
