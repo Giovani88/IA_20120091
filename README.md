@@ -63,7 +63,7 @@
       - [5.5.4 Modo automático](#554-modo-automático)
     - [5.6 Función desplazamiento vertical y horizontal](#56-función-desplazamiento-vertical-y-horizontal)
     - [5.7 Implementación](#57-implementación)
-
+- [6. Modelos de entrenamiento](#6-modelos-de-entrenamiento)
 
 ---
 
@@ -1549,3 +1549,6 @@ Finalmente, despúes de 2 segundos de desplazo, se regresa al jugador a su posic
 ![alt text](markdown/assets/phaser2/phaser2_1.png)
 
 ![alt text](markdown/assets/phaser2/phaser2_2.png)
+
+# 6. Modelos de entrenamiento
+En el siguiente enlace, se encuentran los modelos de entrenamiento. https://drive.google.com/file/d/1cPKTJSQKC20YDu1epFYGQC0CMq9aiwWL/view?usp=sharing 
